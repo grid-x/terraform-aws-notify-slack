@@ -40,6 +40,20 @@ def cloudwatch_notification(message, region):
     ]
   }
 
+def config_notification(message):
+  fields = [
+    { "title": "ARN", "value": message['detail']['configurationItem']['ARN'], "short": False }
+  ]
+  for k, v in message['detail']['configurationItemDiff']['changedProperties'].items():
+    if 'previousValue' in v and 'updatedValue' in v:
+      fields.append({ "title": "-" + k, "value": str(v['previousValue']), "short": True })
+      fields.append({ "title": "+" + k, "value": str(v['updatedValue']), "short": True })
+    else:
+      fields.append({ "title": k, "value": str(v) })
+  return {
+    "fallback": "Config changed",
+    "fields": fields
+  }
 
 def default_notification(subject, message):
   return {
@@ -74,6 +88,10 @@ def notify_slack(subject, message, region):
   if "AlarmName" in message:
     notification = cloudwatch_notification(message, region)
     payload['text'] = "AWS CloudWatch notification - " + message["AlarmName"]
+    payload['attachments'].append(notification)
+  elif "detail" in message and message['detail']['messageType'] == 'ConfigurationItemChangeNotification':
+    notification = config_notification(message)
+    payload['text'] = "AWS Config Change"
     payload['attachments'].append(notification)
   else:
     payload['text'] = "AWS notification"
