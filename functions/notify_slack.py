@@ -3,6 +3,7 @@ from urllib.error import HTTPError
 import os, boto3, json, base64
 import urllib.request, urllib.parse
 import logging
+import hashlib
 
 
 # Decrypt encrypted URL with KMS
@@ -41,7 +42,17 @@ def cloudwatch_notification(message, region):
   }
 
 def config_notification(message):
+  accounts = {
+    'aae9d79a60f753f541a63bd1b1d760bc': 'dev',
+    '39a6661a8b3f6cb6dc363ce91c0a9578': 'staging',
+    '5699182b286c1b617ffda1f0c5db34ca': 'prod',
+    'cd22ac23b5fa1235541b91ea1f1a299c': 'ds-staging',
+    '1568c3bdd4a42fea04e7da2871249ef1': 'ds-prod',
+    '55400ed1f95a6acd78a51f7f6efb6d5f': 'gridbox'
+  }
+  account = accounts[hashlib.md5(message['account'].encode("utf-8")).hexdigest()]
   fields = [
+    { "title": "Account", "value": account },
     { "title": "ARN", "value": message['detail']['configurationItem']['ARN'], "short": False }
   ]
   for k, v in message['detail']['configurationItemDiff']['changedProperties'].items():
