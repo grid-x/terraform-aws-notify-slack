@@ -69,20 +69,16 @@ module "lambda" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "1.28.0"
 
-  create = var.create
+  create_package  = false
 
   function_name = var.lambda_function_name
   description   = var.lambda_description
 
   handler                        = "notify_slack.lambda_handler"
-  source_path                    = "${path.module}/functions/notify_slack.py"
   runtime                        = "python3.8"
   timeout                        = 30
   kms_key_arn                    = var.kms_key_arn
   reserved_concurrent_executions = var.reserved_concurrent_executions
-
-  # If publish is disabled, there will be "Error adding new Lambda Permission for notify_slack: InvalidParameterValueException: We currently do not support adding policies for $LATEST."
-  publish = true
 
   environment_variables = {
     SLACK_WEBHOOK_URL = var.slack_webhook_url
@@ -90,6 +86,12 @@ module "lambda" {
     SLACK_USERNAME    = var.slack_username
     SLACK_EMOJI       = var.slack_emoji
     LOG_EVENTS        = var.log_events ? "True" : "False"
+  }
+
+  store_on_s3         = true
+  s3_existing_package = {
+    bucket = var.lambda_function_s3_bucket
+    key    = var.lambda_function_s3_key
   }
 
   create_role               = var.lambda_role == ""
@@ -114,9 +116,6 @@ module "lambda" {
       source_arn = local.sns_topic_arn
     }
   }
-
-  store_on_s3 = var.lambda_function_store_on_s3
-  s3_bucket   = var.lambda_function_s3_bucket
 
   vpc_subnet_ids         = var.lambda_function_vpc_subnet_ids
   vpc_security_group_ids = var.lambda_function_vpc_security_group_ids
