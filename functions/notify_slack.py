@@ -52,9 +52,14 @@ def config_notification(message):
   }
   account = accounts[hashlib.md5(message['account'].encode("utf-8")).hexdigest()]
   fields = [
-    { "title": "Account", "value": account },
-    { "title": "ARN", "value": message['detail']['configurationItem']['ARN'], "short": False }
+    { "title": "Account", "value": account }
   ]
+
+  arn = message['detail']['configurationItem'].get('ARN')
+
+  if arn:
+    fields.append({ "title": "ARN", "value": arn, "short": False })
+
   for k, v in message['detail']['configurationItemDiff']['changedProperties'].items():
     if 'previousValue' in v and 'updatedValue' in v:
       fields.append({ "title": "-" + k, "value": str(v['previousValue']), "short": True })
