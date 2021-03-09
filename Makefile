@@ -14,4 +14,4 @@ zip:
 	zip -j -o functions/dist.zip functions/notify_slack.py
 
 s3:
-	aws s3 cp functions/dist.zip ${S3_BUCKET}/tf-aws-notify-slack.${DIST_TAG}.zip
+	aws s3 cp functions/dist.zip ${S3_BUCKET}/tf-aws-notify-slack/${DIST_TAG}.zip
