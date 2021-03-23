@@ -5,6 +5,14 @@ import urllib.request, urllib.parse
 import logging
 import hashlib
 
+accounts = {
+  'aae9d79a60f753f541a63bd1b1d760bc': 'dev',
+  '39a6661a8b3f6cb6dc363ce91c0a9578': 'staging',
+  '5699182b286c1b617ffda1f0c5db34ca': 'prod',
+  'cd22ac23b5fa1235541b91ea1f1a299c': 'ds-staging',
+  '1568c3bdd4a42fea04e7da2871249ef1': 'ds-prod',
+  '55400ed1f95a6acd78a51f7f6efb6d5f': 'gridbox'
+}
 
 # Decrypt encrypted URL with KMS
 def decrypt(encrypted_url):
@@ -18,21 +26,16 @@ def decrypt(encrypted_url):
 
 
 def cloudwatch_notification(message, region):
+  cloudwatch_url = "https://console.aws.amazon.com/cloudwatch/home?region="
+  account = accounts[hashlib.md5(message['account'].encode("utf-8")).hexdigest()]
   states = {'OK': 'good', 'INSUFFICIENT_DATA': 'warning', 'ALARM': 'danger'}
-  if region.startswith("us-gov-"):
-    cloudwatch_url = "https://console.amazonaws-us-gov.com/cloudwatch/home?region="
-  else:
-    cloudwatch_url = "https://console.aws.amazon.com/cloudwatch/home?region="
 
   return {
     "color": states[message['NewStateValue']],
     "fallback": "Alarm {} triggered".format(message['AlarmName']),
     "fields": [
       { "title": "Alarm Name", "value": message['AlarmName'], "short": True },
-      { "title": "Alarm Description", "value": message['AlarmDescription'], "short": False},
-      { "title": "Alarm reason", "value": message['NewStateReason'], "short": False},
-      { "title": "Old State", "value": message['OldStateValue'], "short": True },
-      { "title": "Current State", "value": message['NewStateValue'], "short": True },
+      { "title": "Account", "value": account, "short": True },
       {
         "title": "Link to Alarm",
         "value": cloudwatch_url + region + "#alarm:alarmFilter=ANY;name=" + urllib.parse.quote(message['AlarmName']),
@@ -42,14 +45,6 @@ def cloudwatch_notification(message, region):
   }
 
 def config_notification(message):
-  accounts = {
-    'aae9d79a60f753f541a63bd1b1d760bc': 'dev',
-    '39a6661a8b3f6cb6dc363ce91c0a9578': 'staging',
-    '5699182b286c1b617ffda1f0c5db34ca': 'prod',
-    'cd22ac23b5fa1235541b91ea1f1a299c': 'ds-staging',
-    '1568c3bdd4a42fea04e7da2871249ef1': 'ds-prod',
-    '55400ed1f95a6acd78a51f7f6efb6d5f': 'gridbox'
-  }
   account = accounts[hashlib.md5(message['account'].encode("utf-8")).hexdigest()]
   fields = [
     { "title": "Account", "value": account }
