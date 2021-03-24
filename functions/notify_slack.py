@@ -47,7 +47,7 @@ def decrypt(encrypted_url):
 
 def cloudwatch_notification(message, region):
   cloudwatch_url = "https://console.aws.amazon.com/cloudwatch/home?region="
-  account = accounts[hashlib.md5(message['account'].encode("utf-8")).hexdigest()]
+  account = accounts[hashlib.md5(message['AWSAccountId'].encode("utf-8")).hexdigest()]
   states = {'OK': 'good', 'INSUFFICIENT_DATA': 'warning', 'ALARM': 'danger'}
 
   alarmName = message['AlarmName']
