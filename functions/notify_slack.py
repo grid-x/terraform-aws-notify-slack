@@ -46,28 +46,25 @@ def decrypt(encrypted_url):
 
 
 def cloudwatch_notification(message, region):
-  cloudwatch_url = "https://console.aws.amazon.com/cloudwatch/home?region="
   account = accounts[hashlib.md5(message['AWSAccountId'].encode("utf-8")).hexdigest()]
   states = {'OK': 'good', 'INSUFFICIENT_DATA': 'warning', 'ALARM': 'danger'}
 
   alarmName = message['AlarmName']
-  fields = [
-      { "title": "Alarm Name", "value": alarmName, "short": True },
-      { "title": "Account", "value": account, "short": True },
-  ]
-  alarmURL = cwAlarms.get(alarmName)
-  if alarmURL:
-    fields.append({
-        "title": "Link to Logs",
-        "value": cwPrefix + alarmURL + cwSuffix,
-        "short": False
-    })
 
-  return {
+  msg = {
     "color": states[message['NewStateValue']],
     "fallback": "Alarm {} triggered".format(message['AlarmName']),
-    "fields": fields
+    "fields": [
+      { "title": "Alarm Name", "value": alarmName, "short": True },
+      { "title": "Account", "value": account, "short": True },
+    ],
   }
+
+  alarmURL = cwAlarms.get(alarmName)
+  if alarmURL:
+    msg['title_link'] = cwPrefix + alarmURL + cwSuffix
+
+  return msg
 
 def config_notification(message):
   account = accounts[hashlib.md5(message['account'].encode("utf-8")).hexdigest()]
@@ -123,7 +120,7 @@ def notify_slack(subject, message, region):
 
   if "AlarmName" in message:
     notification = cloudwatch_notification(message, region)
-    payload['text'] = "AWS CloudWatch notification - " + message["AlarmName"]
+    payload['title'] = "AWS CloudWatch notification - " + message["AlarmName"]
     payload['attachments'].append(notification)
   elif "detail" in message and message['detail']['messageType'] == 'ConfigurationItemChangeNotification':
     notification = config_notification(message)
