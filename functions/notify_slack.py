@@ -53,20 +53,26 @@ def cloudwatch_notification(message, region):
 
     alarmName = message["AlarmName"]
 
-    msg = {
-        "color": states[message["NewStateValue"]],
-        "fallback": "Alarm {} triggered".format(message["AlarmName"]),
-        "fields": [
-            {"title": "Alarm Name", "value": alarmName, "short": True},
-            {"title": "Account", "value": account, "short": True},
-        ],
-    }
+    fields = [
+        {"title": "Alarm Name", "value": alarmName, "short": True},
+        {"title": "Account", "value": account, "short": True},
+    ]
 
     alarmURL = cwAlarms.get(alarmName)
     if alarmURL:
-        msg["title_link"] = cwPrefix + alarmURL + cwSuffix
+        fields.append(
+            {
+                "title": "Link to Logs",
+                "value": "<" + cwPrefix + alarmURL + cwSuffix + "|Cloudwatch>",
+            }
+        )
 
-    return msg
+    return {
+        "color": states[message["NewStateValue"]],
+        "fallback": "Alarm {} triggered".format(message["AlarmName"]),
+        "mrkdwn_in": ["fields"],
+        "fields": fields,
+    }
 
 
 def config_notification(message):
@@ -129,7 +135,7 @@ def notify_slack(subject, message, region):
 
     if "AlarmName" in message:
         notification = cloudwatch_notification(message, region)
-        payload["title"] = "AWS CloudWatch notification - " + message["AlarmName"]
+        payload["text"] = "AWS CloudWatch notification - " + message["AlarmName"]
         payload["attachments"].append(notification)
     elif (
         "detail" in message
